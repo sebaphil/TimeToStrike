@@ -1,5 +1,6 @@
 package ziotom.timetostrike;
 
+import android.app.DownloadManager;
 import android.app.ListFragment;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
@@ -12,7 +13,10 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Environment;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
@@ -29,6 +33,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.content.ContentResolver;
 import android.location.LocationManager;
+
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +44,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -85,6 +95,9 @@ public class MainActivity extends AppCompatActivity {
 
         //////////////////////////////////////////////////////////////
 
+        final DownloadTask downloadTask = new DownloadTask(this);
+        downloadTask.execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv");
+
         ///////////////////// Setting values /////////////////////////
         /*downloadProgressDialog.setMessage("Sto aggiornando la lista degli scioperi...");
         downloadProgressDialog.setIndeterminate(true);
@@ -95,8 +108,13 @@ public class MainActivity extends AppCompatActivity {
         //////////////////////////////////////////////////////////////
 
         // Di seguito, la task per il download del file.
-        DownloadTask downloadTask = new DownloadTask(this);
-        downloadTask.execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv");
+
+        File f = new File("/sdcard/dati.csv");
+        if(f.exists() && !f.isDirectory()) {
+            TextView error = new TextView(this);
+            error.setText("error");
+            mainActivityLayout.addView(error);
+        }
 
         /////////////////////// Object adding ////////////////////////
         mainActivityLayout.addView(favoriteText);
@@ -104,6 +122,18 @@ public class MainActivity extends AppCompatActivity {
         mainActivityLayout.addView(nearbyText);
         mainActivityLayout.addView(nearbyList);
         //////////////////////////////////////////////////////////////
+
+        CSVReader reader = new CSVReader();
+        if(reader.isEmpty()){
+            TextView error = new TextView(this);
+            error.setText("empty");
+            mainActivityLayout.addView(error);
+        }
+
+        for(String[] e:reader.getCSV()){
+            favoriteArray.add(e[2]);
+        }
+        favoriteAdapter.notifyDataSetChanged();
 
         setContentView(mainActivityLayout);
 
@@ -124,7 +154,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // This is going to be the AsyncTask to download the .csv file.
+    // This is going to be the code snippet required to download the .csv file.
+    // "http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv"
 
     private class DownloadTask extends AsyncTask<String, Integer, String> {
 
@@ -191,30 +222,43 @@ public class MainActivity extends AppCompatActivity {
             }
             return null;
         }
-
     }
 
-    /*public final List<String[]> readCsv(Context context) {
-        List<String[]> questionList = new ArrayList<String[]>();
-        AssetManager assetManager = context.getAssets();
 
-        try {
-            InputStream csvStream = assetManager.open(CSV_PATH);
-            InputStreamReader csvStreamReader = new InputStreamReader(csvStream);
-            CSVReader csvReader = new CSVReader(csvStreamReader);
-            String[] line;
 
-            // throw away the header
-            csvReader.readNext();
 
-            while ((line = csvReader.readNext()) != null) {
-                questionList.add(line);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+
+    public class CSVReader{
+        String csvFile = "/sdcard/dati.csv";
+        String line = "";
+        String cvsSplitBy = ",";
+        ArrayList<String[]> listOfLists = new ArrayList<>();
+
+        public ArrayList<String[]> getCSV(){
+            readCSV();
+            return listOfLists;
         }
-        return questionList;
-    }*/
+
+        public Boolean isEmpty(){
+            return listOfLists.isEmpty();
+        }
+
+        public void readCSV() {
+            try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+
+                while ((line = br.readLine()) != null) {
+
+                    // Use comma as separator.
+                    String[] listOfStrings = line.split(cvsSplitBy);
+                    listOfLists.add(listOfStrings);
+
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 
 
