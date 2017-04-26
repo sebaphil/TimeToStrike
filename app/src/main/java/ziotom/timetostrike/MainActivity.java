@@ -95,6 +95,8 @@ public class MainActivity extends AppCompatActivity {
 
         //////////////////////////////////////////////////////////////
 
+
+        // Di seguito, la task per il download del file.
         final DownloadTask downloadTask = new DownloadTask(this);
         downloadTask.execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv");
 
@@ -107,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         nearbyText.setText("Nelle vicinanze:");
         //////////////////////////////////////////////////////////////
 
-        // Di seguito, la task per il download del file.
+
 
         File f = new File("/sdcard/dati.csv");
         if(f.exists() && !f.isDirectory()) {
@@ -189,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // download the file
                 input = connection.getInputStream();
-                output = new FileOutputStream("/sdcard/file_name.extension");
+                output = new FileOutputStream("/sdcard/dati.csv");
 
                 byte data[] = new byte[4096];
                 long total = 0;
