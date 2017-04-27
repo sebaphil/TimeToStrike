@@ -1,5 +1,6 @@
 package ziotom.timetostrike;
 
+import android.Manifest;
 import android.app.DownloadManager;
 import android.app.ListFragment;
 import android.app.ProgressDialog;
@@ -7,6 +8,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -19,8 +21,11 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -50,55 +55,65 @@ import java.io.FileReader;
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
+    // NOT WORKING HERE
+    //int fineLocationPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
+    //int writeExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+    //int readExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+    ArrayAdapter<String> favoriteAdapter;
+    ArrayAdapter<String> nearbyAdapter;
+    String[] permissions;
+    LinearLayout mainActivityLayout;
+    ArrayList<String> favoriteArray;
+    ArrayList<String> nearbyArray;
+    ListView nearbyList;
+    ListView favoriteList;
+    TextView favoriteText;
+    TextView nearbyText;
+    DownloadTask downloadTask;
+    CSVReader reader;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // setContentView(R.layout.activity_main);
-
-
-        final LinearLayout mainActivityLayout = new LinearLayout(this);
+    protected void loadUI(){
+        mainActivityLayout = new LinearLayout(this);
         mainActivityLayout.setOrientation(LinearLayout.VERTICAL);
+        Log.e("App", "onCreate: ho definito e istanziato il layout");
+
 
         // We don't want the app to switch from Portrait to Landscape view,
         // so we're going to fix the orientation.
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        ArrayList<String> favoriteArray = new ArrayList<String>();
-        ArrayList<String> nearbyArray = new ArrayList<String>();
-
+        favoriteArray = new ArrayList<String>();
+        nearbyArray = new ArrayList<String>();
+        Log.e("App", "onCreate: ho definito gli arraylist di supporto");
 
         ////////////////////// Object creation ///////////////////////
         //ProgressDialog downloadProgressDialog = new ProgressDialog(this);
-        ListView nearbyList = new ListView(this);
-        ListView favoriteList = new ListView(this);
-        TextView favoriteText = new TextView(this);
-        TextView nearbyText = new TextView(this);
-
+        nearbyList = new ListView(this);
+        favoriteList = new ListView(this);
+        favoriteText = new TextView(this);
+        nearbyText = new TextView(this);
+        Log.e("App", "onCreate: istanzio liste e testi");
         // In the following lines, we're going to specify IDs for both the favorite and nearby lists,
         // as we're going to need them when calling the constructor for the ArrayAdapter, which is necessary
         // if we want to add items to the ListViews.
 
         favoriteList.setId(1);
         nearbyList.setId(2);
-
-        ArrayAdapter<String> favoriteAdapter = new ArrayAdapter<String>(this, 1, favoriteArray);
-        ArrayAdapter<String> nearbyAdapter = new ArrayAdapter<String>(this, 2, nearbyArray);
+        Log.e("App", "onCreate: setto gli ID");
+        favoriteAdapter = new ArrayAdapter<String>(this, 1, favoriteArray);
+        nearbyAdapter = new ArrayAdapter<String>(this, 2, nearbyArray);
 
         // Next, we're going to effectively link the adapters to each ListViews.
 
         favoriteList.setAdapter(favoriteAdapter);
         nearbyList.setAdapter(nearbyAdapter);
-
-
+        Log.e("App", "onCreate: istanzio e setto gli adapter");
 
         //////////////////////////////////////////////////////////////
 
 
-        // Di seguito, la task per il download del file.
-        final DownloadTask downloadTask = new DownloadTask(this);
-        downloadTask.execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv");
+
 
         ///////////////////// Setting values /////////////////////////
         /*downloadProgressDialog.setMessage("Sto aggiornando la lista degli scioperi...");
@@ -108,27 +123,22 @@ public class MainActivity extends AppCompatActivity {
         favoriteText.setText("Preferiti:");
         nearbyText.setText("Nelle vicinanze:");
         //////////////////////////////////////////////////////////////
-
-
-
-        File f = new File("/sdcard/dati.csv");
-        if(f.exists() && !f.isDirectory()) {
-            TextView error = new TextView(this);
-            error.setText("error");
-            mainActivityLayout.addView(error);
-        }
+        Log.e("App", "onCreate: setto i layout");
 
         /////////////////////// Object adding ////////////////////////
         mainActivityLayout.addView(favoriteText);
         mainActivityLayout.addView(favoriteList);
         mainActivityLayout.addView(nearbyText);
         mainActivityLayout.addView(nearbyList);
+        Log.e("App", "onCreate: aggiungo le view");
         //////////////////////////////////////////////////////////////
 
-        CSVReader reader = new CSVReader();
+        reader = new CSVReader();
+        Log.e("App", "onCreate: istanzio il reader");
         if(reader.isEmpty()){
             TextView error = new TextView(this);
             error.setText("empty");
+            Log.e("App", "onCreate: File is empty");
             mainActivityLayout.addView(error);
         }
 
@@ -138,9 +148,59 @@ public class MainActivity extends AppCompatActivity {
         favoriteAdapter.notifyDataSetChanged();
 
         setContentView(mainActivityLayout);
+    }
+
+    protected void executeDownload(){
+        // Di seguito, la task per il download del file.
+        downloadTask = new DownloadTask(this);
+        downloadTask.execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv");
+        Log.e("App", "onCreate: eseguo il download");
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // setContentView(R.layout.activity_main);
+        permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
+        Log.e("App", "onCreate: sono nell'onCreate");
+        ////////////////////////////////////////////////////////////////////////
+        /////////////////////// PERMISSIONS ////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        //ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
+        // controlliamo se la permission è concessa
+        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                && (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) &&
+                (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
+            Log.e("App", "onCreate: Permissions denied" + ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) +
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)+
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE));
+            // se arriviamo qui è perchè la permission non è stata ancora concessa
+            ActivityCompat.requestPermissions(this, permissions, 0);
+            Log.e("App", "onCreate: ho controllato le autorizzazioni");
+        } else {
+            executeDownload();
+            loadUI();
+            Log.e("App", "onCreate: autorizzazioni granted, ho eseguito il download e caricato la UI");
+        }
 
 
+    }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case 0: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.e("App", "onRequestPermissionsResult: le autorizzazioni sono granted");
+                    executeDownload();
+                    loadUI();
+                } else {
+                    Log.e("App", "onRequestPermissionsResult: le autorizzazioni sono denied");
+                    System.exit(0);
+                }
+                return;
+            }
+        }
     }
 
     // This method will return true or false, depending on the status of the
@@ -184,6 +244,7 @@ public class MainActivity extends AppCompatActivity {
                     return "Server returned HTTP " + connection.getResponseCode()
                             + " " + connection.getResponseMessage();
                 }
+                Log.e("App", "doInBackground: started writing");
 
                 // this will be useful to display download percentage
                 // might be -1: server did not report the length
@@ -191,24 +252,22 @@ public class MainActivity extends AppCompatActivity {
 
                 // download the file
                 input = connection.getInputStream();
-                output = new FileOutputStream("/sdcard/dati.csv");
+                output = new FileOutputStream("/sdcard/scioperi.csv");
 
                 byte data[] = new byte[4096];
                 long total = 0;
                 int count;
                 while ((count = input.read(data)) != -1) {
                     // allow canceling with back button
-                    if (isCancelled()) {
-                        input.close();
-                        return null;
-                    }
                     total += count;
                     // publishing the progress....
                     if (fileLength > 0) // only if total length is known
                         publishProgress((int) (total * 100 / fileLength));
                     output.write(data, 0, count);
+                    Log.e("App", "doInBackground: " + data.toString());
                 }
             } catch (Exception e) {
+                Log.e("App", "doInBackground: "+e.getLocalizedMessage());
                 return e.toString();
             } finally {
                 try {
@@ -222,6 +281,7 @@ public class MainActivity extends AppCompatActivity {
                 if (connection != null)
                     connection.disconnect();
             }
+            Log.e("App", "doInBackground: finished writing");
             return null;
         }
     }
@@ -231,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     public class CSVReader{
-        String csvFile = "/sdcard/dati.csv";
+        String csvFile = "/sdcard/scioperi.csv";
         String line = "";
         String cvsSplitBy = ",";
         ArrayList<String[]> listOfLists = new ArrayList<>();
