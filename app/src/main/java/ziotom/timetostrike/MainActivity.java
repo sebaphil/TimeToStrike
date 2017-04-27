@@ -20,9 +20,11 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.PowerManager;
+import android.os.WorkSource;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -78,11 +80,13 @@ public class MainActivity extends AppCompatActivity {
     final String csvFile = "/sdcard/scioperi.csv";
     String line = "";
     final String cvsSplitBy = ",";
+    final int simpleListItemID = 17367043;
 
 
     protected void loadUI(){
         mainActivityLayout = new LinearLayout(this);
         mainActivityLayout.setOrientation(LinearLayout.VERTICAL);
+        mainActivityLayout.setId(1);
         Log.e("App", "onCreate: ho definito e istanziato il layout");
 
 
@@ -105,11 +109,10 @@ public class MainActivity extends AppCompatActivity {
         Log.e("App", "onCreate: ho definito gli arraylist di supporto");
 
 
-
         favoriteList.setId(favoriteListViewID);
         nearbyList.setId(nearbyListViewID);
-        favoriteAdapter = new ArrayAdapter<String>(this, favoriteListViewID, favoriteArray);
-        nearbyAdapter = new ArrayAdapter<String>(this, nearbyListViewID, nearbyArray);
+        favoriteAdapter = new ArrayAdapter<String>(this, simpleListItemID, favoriteArray);
+        nearbyAdapter = new ArrayAdapter<String>(this, simpleListItemID, nearbyArray);
 
         favoriteList.setAdapter(favoriteAdapter);
         nearbyList.setAdapter(nearbyAdapter);
@@ -166,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Use comma as separator.
                 String[] listOfStrings = line.split(cvsSplitBy);
-                Log.e("App", "readCSV: " + listOfStrings[0]);
+                //Log.e("App", "readCSV: " + listOfStrings[0]);
                 listOfLists.add(listOfStrings);
 
             }
@@ -175,7 +178,9 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        favoriteAdapter.add(listOfLists.get(1)[0].toString());
+        favoriteArray.add(listOfLists.get(1)[0].toString());
+        Log.e("App", "loadUI: " + listOfLists.get(1)[0].toString());
+        favoriteAdapter.notifyDataSetChanged();
 
         /*for(String[] e:listOfLists){
             //favoriteArray.add(e[2]);
@@ -334,39 +339,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
-
-    /*public class CSVReader{
-        //String csvFile = "/sdcard/scioperi.csv";
-        String line = "";
-        String cvsSplitBy = ",";
-        ArrayList<String[]> listOfLists = new ArrayList<>();
-
-        public ArrayList<String[]> getCSV(){
-            return listOfLists;
-        }
-
-        public Boolean isEmpty(){
-            return listOfLists.isEmpty();
-        }
-
-        public void readCSV(String csvFile) {
-            try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
-
-                while ((line = br.readLine()) != null) {
-
-                    // Use comma as separator.
-                    String[] listOfStrings = line.split(cvsSplitBy);
-                    Log.e("App", "readCSV: " + listOfStrings[0]);
-                    listOfLists.add(listOfStrings);
-
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }*/
 
 
 
