@@ -53,6 +53,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
     // NOT WORKING HERE
@@ -70,7 +71,14 @@ public class MainActivity extends AppCompatActivity {
     TextView favoriteText;
     TextView nearbyText;
     DownloadTask downloadTask;
-    CSVReader reader;
+    ArrayList<String[]> listOfLists;
+    final Integer favoriteListViewID = 41;
+    final Integer nearbyListViewID = 42;
+
+    final String csvFile = "/sdcard/scioperi.csv";
+    String line = "";
+    final String cvsSplitBy = ",";
+
 
     protected void loadUI(){
         mainActivityLayout = new LinearLayout(this);
@@ -78,37 +86,49 @@ public class MainActivity extends AppCompatActivity {
         Log.e("App", "onCreate: ho definito e istanziato il layout");
 
 
-        // We don't want the app to switch from Portrait to Landscape view,
-        // so we're going to fix the orientation.
-
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
-        favoriteArray = new ArrayList<String>();
-        nearbyArray = new ArrayList<String>();
-        Log.e("App", "onCreate: ho definito gli arraylist di supporto");
-
-        ////////////////////// Object creation ///////////////////////
-        //ProgressDialog downloadProgressDialog = new ProgressDialog(this);
         nearbyList = new ListView(this);
         favoriteList = new ListView(this);
         favoriteText = new TextView(this);
         nearbyText = new TextView(this);
-        Log.e("App", "onCreate: istanzio liste e testi");
+
+
+        // We don't want the app to switch from Portrait to Landscape view,
+        // so we're going to fix the orientation.
+
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        /*File prova = new File("/sdcard/scioperi.csv");
+        if(prova.exists()){
+            Log.e("App", "loadUI: file esiste!");
+        }*/
+        favoriteArray = new ArrayList<String>();
+        nearbyArray = new ArrayList<String>();
+        Log.e("App", "onCreate: ho definito gli arraylist di supporto");
+
+
+
+        favoriteList.setId(favoriteListViewID);
+        nearbyList.setId(nearbyListViewID);
+        favoriteAdapter = new ArrayAdapter<String>(this, favoriteListViewID, favoriteArray);
+        nearbyAdapter = new ArrayAdapter<String>(this, nearbyListViewID, nearbyArray);
+
+        favoriteList.setAdapter(favoriteAdapter);
+        nearbyList.setAdapter(nearbyAdapter);
+
+        ////////////////////// Object creation ///////////////////////
+        //ProgressDialog downloadProgressDialog = new ProgressDialog(this);
+
         // In the following lines, we're going to specify IDs for both the favorite and nearby lists,
         // as we're going to need them when calling the constructor for the ArrayAdapter, which is necessary
         // if we want to add items to the ListViews.
 
-        favoriteList.setId(1);
-        nearbyList.setId(2);
-        Log.e("App", "onCreate: setto gli ID");
-        favoriteAdapter = new ArrayAdapter<String>(this, 1, favoriteArray);
-        nearbyAdapter = new ArrayAdapter<String>(this, 2, nearbyArray);
+
+
 
         // Next, we're going to effectively link the adapters to each ListViews.
 
-        favoriteList.setAdapter(favoriteAdapter);
-        nearbyList.setAdapter(nearbyAdapter);
-        Log.e("App", "onCreate: istanzio e setto gli adapter");
+
+
+
 
         //////////////////////////////////////////////////////////////
 
@@ -123,38 +143,52 @@ public class MainActivity extends AppCompatActivity {
         favoriteText.setText("Preferiti:");
         nearbyText.setText("Nelle vicinanze:");
         //////////////////////////////////////////////////////////////
-        Log.e("App", "onCreate: setto i layout");
+
 
         /////////////////////// Object adding ////////////////////////
         mainActivityLayout.addView(favoriteText);
         mainActivityLayout.addView(favoriteList);
         mainActivityLayout.addView(nearbyText);
         mainActivityLayout.addView(nearbyList);
-        Log.e("App", "onCreate: aggiungo le view");
+
         //////////////////////////////////////////////////////////////
 
-        reader = new CSVReader();
-        Log.e("App", "onCreate: istanzio il reader");
-        if(reader.isEmpty()){
-            TextView error = new TextView(this);
-            error.setText("empty");
-            Log.e("App", "onCreate: File is empty");
-            mainActivityLayout.addView(error);
-        }
 
-        for(String[] e:reader.getCSV()){
-            favoriteArray.add(e[2]);
-        }
-        favoriteAdapter.notifyDataSetChanged();
+        //favoriteAdapter.notifyDataSetChanged();
 
         setContentView(mainActivityLayout);
+
+
+        listOfLists = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+
+            while ((line = br.readLine()) != null) {
+
+                // Use comma as separator.
+                String[] listOfStrings = line.split(cvsSplitBy);
+                Log.e("App", "readCSV: " + listOfStrings[0]);
+                listOfLists.add(listOfStrings);
+
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        favoriteAdapter.add(listOfLists.get(1)[0].toString());
+
+        /*for(String[] e:listOfLists){
+            //favoriteArray.add(e[2]);
+            //Log.e("App", "loadUI: " + e.toString());
+            favoriteAdapter.add(e[2]);
+        }*/
     }
 
     protected void executeDownload(){
         // Di seguito, la task per il download del file.
         downloadTask = new DownloadTask(this);
         downloadTask.execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv");
-        Log.e("App", "onCreate: eseguo il download");
+        Log.e("App", "onCreate: ho eseguito il download");
     }
 
     @Override
@@ -176,9 +210,15 @@ public class MainActivity extends AppCompatActivity {
                     ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE));
             // se arriviamo qui è perchè la permission non è stata ancora concessa
             ActivityCompat.requestPermissions(this, permissions, 0);
-            Log.e("App", "onCreate: ho controllato le autorizzazioni");
+            Log.e("App", "onCreate: ho controllato le autorizzazioni perché non c'erano");
         } else {
-            executeDownload();
+            try {
+                String result = new DownloadTask(this).execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv").get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
             loadUI();
             Log.e("App", "onCreate: autorizzazioni granted, ho eseguito il download e caricato la UI");
         }
@@ -192,7 +232,13 @@ public class MainActivity extends AppCompatActivity {
             case 0: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.e("App", "onRequestPermissionsResult: le autorizzazioni sono granted");
-                    executeDownload();
+                    try {
+                        String result = new DownloadTask(this).execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv").get();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    }
                     loadUI();
                 } else {
                     Log.e("App", "onRequestPermissionsResult: le autorizzazioni sono denied");
@@ -264,7 +310,7 @@ public class MainActivity extends AppCompatActivity {
                     if (fileLength > 0) // only if total length is known
                         publishProgress((int) (total * 100 / fileLength));
                     output.write(data, 0, count);
-                    Log.e("App", "doInBackground: " + data.toString());
+                    //Log.e("App", "doInBackground: " + data.toString());
                 }
             } catch (Exception e) {
                 Log.e("App", "doInBackground: "+e.getLocalizedMessage());
@@ -290,14 +336,13 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public class CSVReader{
-        String csvFile = "/sdcard/scioperi.csv";
+    /*public class CSVReader{
+        //String csvFile = "/sdcard/scioperi.csv";
         String line = "";
         String cvsSplitBy = ",";
         ArrayList<String[]> listOfLists = new ArrayList<>();
 
         public ArrayList<String[]> getCSV(){
-            readCSV();
             return listOfLists;
         }
 
@@ -305,13 +350,14 @@ public class MainActivity extends AppCompatActivity {
             return listOfLists.isEmpty();
         }
 
-        public void readCSV() {
+        public void readCSV(String csvFile) {
             try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
 
                 while ((line = br.readLine()) != null) {
 
                     // Use comma as separator.
                     String[] listOfStrings = line.split(cvsSplitBy);
+                    Log.e("App", "readCSV: " + listOfStrings[0]);
                     listOfLists.add(listOfStrings);
 
                 }
@@ -320,7 +366,7 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-    }
+    }*/
 
 
 
