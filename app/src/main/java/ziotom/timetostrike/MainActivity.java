@@ -27,9 +27,12 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -49,7 +52,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -62,18 +70,15 @@ public class MainActivity extends AppCompatActivity {
     //int fineLocationPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
     //int writeExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
     //int readExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
-    ArrayAdapter<String> favoriteAdapter;
-    ArrayAdapter<String> nearbyAdapter;
+    ArrayAdapter<String> listAdapter;
     String[] permissions;
-    LinearLayout mainActivityLayout;
-    ArrayList<String> favoriteArray;
-    ArrayList<String> nearbyArray;
-    ListView nearbyList;
-    ListView favoriteList;
-    TextView favoriteText;
-    TextView nearbyText;
+    RelativeLayout mainActivityLayout;
+    ArrayList<String> listArray;
+    ListView list;
     DownloadTask downloadTask;
+    Date y;
     ArrayList<String[]> listOfLists;
+    //Giorno giorno;
     final Integer favoriteListViewID = 41;
     final Integer nearbyListViewID = 42;
 
@@ -83,17 +88,21 @@ public class MainActivity extends AppCompatActivity {
     final int simpleListItemID = 17367043;
 
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(0, 0, 0, "Impostazioni");
+        return super.onCreateOptionsMenu(menu);
+    }
+
     protected void loadUI(){
-        mainActivityLayout = new LinearLayout(this);
-        mainActivityLayout.setOrientation(LinearLayout.VERTICAL);
+        mainActivityLayout = new RelativeLayout(this);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        //mainActivityLayout.setOrientation(LinearLayout.VERTICAL);
         mainActivityLayout.setId(1);
         Log.e("App", "onCreate: ho definito e istanziato il layout");
 
 
-        nearbyList = new ListView(this);
-        favoriteList = new ListView(this);
-        favoriteText = new TextView(this);
-        nearbyText = new TextView(this);
+        list = new ListView(this);
 
 
         // We don't want the app to switch from Portrait to Landscape view,
@@ -104,55 +113,29 @@ public class MainActivity extends AppCompatActivity {
         if(prova.exists()){
             Log.e("App", "loadUI: file esiste!");
         }*/
-        favoriteArray = new ArrayList<String>();
-        nearbyArray = new ArrayList<String>();
+        listArray = new ArrayList<String>();
         Log.e("App", "onCreate: ho definito gli arraylist di supporto");
 
 
-        favoriteList.setId(favoriteListViewID);
-        nearbyList.setId(nearbyListViewID);
-        favoriteAdapter = new ArrayAdapter<String>(this, simpleListItemID, favoriteArray);
-        nearbyAdapter = new ArrayAdapter<String>(this, simpleListItemID, nearbyArray);
+        list.setId(favoriteListViewID);
+        listAdapter = new ArrayAdapter<String>(this, simpleListItemID, listArray);
 
-        favoriteList.setAdapter(favoriteAdapter);
-        nearbyList.setAdapter(nearbyAdapter);
+        list.setAdapter(listAdapter);
+        list.setClickable(true);
+        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                mainActivityLayout.removeAllViews();
 
-        ////////////////////// Object creation ///////////////////////
-        //ProgressDialog downloadProgressDialog = new ProgressDialog(this);
+            }
+        });
 
-        // In the following lines, we're going to specify IDs for both the favorite and nearby lists,
-        // as we're going to need them when calling the constructor for the ArrayAdapter, which is necessary
-        // if we want to add items to the ListViews.
-
-
-
-
-        // Next, we're going to effectively link the adapters to each ListViews.
-
-
-
-
-
-        //////////////////////////////////////////////////////////////
-
-
-
-
-        ///////////////////// Setting values /////////////////////////
-        /*downloadProgressDialog.setMessage("Sto aggiornando la lista degli scioperi...");
-        downloadProgressDialog.setIndeterminate(true);
-        downloadProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        downloadProgressDialog.setCancelable(false);*/
-        favoriteText.setText("Preferiti:");
-        nearbyText.setText("Nelle vicinanze:");
-        //////////////////////////////////////////////////////////////
 
 
         /////////////////////// Object adding ////////////////////////
-        mainActivityLayout.addView(favoriteText);
-        mainActivityLayout.addView(favoriteList);
-        mainActivityLayout.addView(nearbyText);
-        mainActivityLayout.addView(nearbyList);
+        //mainActivityLayout.addView(favoriteText);
+        mainActivityLayout.addView(list);
+        //mainActivityLayout.addView(nearbyText);
 
         //////////////////////////////////////////////////////////////
 
@@ -177,17 +160,43 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        listOfLists.remove(0);
+        Log.e("App", "loadUI: Comincio il ciclo");
+        listArray.add("Preferiti:");
+        for(String[] s:listOfLists){
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            String[] lettere1 = s[0].toString().split("");
+            String[] unisco1 = Arrays.copyOfRange(lettere1,2,lettere1.length-1);
 
-        favoriteArray.add(listOfLists.get(1)[0].toString());
-        Log.e("App", "loadUI: " + listOfLists.get(1)[0].toString());
-        favoriteAdapter.notifyDataSetChanged();
+            String[] lettere2 = s[0].toString().split("");
+            String[] unisco2 = Arrays.copyOfRange(lettere2,2,lettere2.length-1);
+            Log.e("App", "loadUI: Definisco sdf");
+            Date date = new Date();
+            sdf.format(date);
+            Log.e("App", "loadUI: faccio il format");
+            try {
+                y = sdf.parse(TextUtils.join("",unisco1));
+                Log.e("App", "loadUI: Parso");
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            if(y.compareTo(date)>=0){
+                Log.e("App", "loadUI: ho comparato");
+                listArray.add(TextUtils.join("",unisco1) + "-" + TextUtils.join("",unisco2) + "-" + s[2] + "-" + s[4] + "-" + s[10]);
+            }
+        }
+        listArray.add("Nelle vicinanze:");
 
-        /*for(String[] e:listOfLists){
-            //favoriteArray.add(e[2]);
-            //Log.e("App", "loadUI: " + e.toString());
-            favoriteAdapter.add(e[2]);
-        }*/
+        //favoriteArray.add(listOfLists.get(1)[0].toString());
+        listAdapter.notifyDataSetChanged();
+
+
+
     }
+
+
+
+
 
     protected void executeDownload(){
         // Di seguito, la task per il download del file.
@@ -195,6 +204,9 @@ public class MainActivity extends AppCompatActivity {
         downloadTask.execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv");
         Log.e("App", "onCreate: ho eseguito il download");
     }
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -337,6 +349,25 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    public static class DateParser{
+        private String giorno;
+        private Date parsedDate;
+        private SimpleDateFormat sdf;
+        public DateParser(String giorno) {
+            this.giorno = giorno;
+        }
+
+        public Date getParsedDate(){
+            sdf = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+            try {
+                this.parsedDate = sdf.parse(this.giorno + " 01:00:00");
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            return this.parsedDate;
+        }
+    }
 
 
 
