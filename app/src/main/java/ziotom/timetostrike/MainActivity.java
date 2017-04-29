@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DateFormat;
@@ -65,6 +66,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -77,6 +79,8 @@ public class MainActivity extends AppCompatActivity {
     DownloadTask downloadTask;
     Date y;
     ArrayList<String[]> listOfLists;
+    ArrayList<String> selections;
+    Scanner s;
     final Integer favoriteListViewID = 41;
 
     final String csvFile = "/sdcard/scioperi.csv";
@@ -84,6 +88,18 @@ public class MainActivity extends AppCompatActivity {
     final String cvsSplitBy = ",";
     final int simpleListItemID = 17367043;
 
+    protected void readSelections() {
+        selections = new ArrayList<>();
+        try {
+            s = new Scanner(new File("/sdcard/selezionate.txt"));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        while (s.hasNext()) {
+            selections.add(s.next());
+        }
+        s.close();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -161,22 +177,53 @@ public class MainActivity extends AppCompatActivity {
 
             String[] lettere2 = s[0].toString().split("");
             String[] unisco2 = Arrays.copyOfRange(lettere2,2,lettere2.length-1);
-            Log.e("App", "loadUI: Definisco sdf");
+            //Log.e("App", "loadUI: Definisco sdf");
             Date date = new Date();
             sdf.format(date);
-            Log.e("App", "loadUI: faccio il format");
+            //Log.e("App", "loadUI: faccio il format");
             try {
                 y = sdf.parse(TextUtils.join("",unisco1));
-                Log.e("App", "loadUI: Parso");
+                //Log.e("App", "loadUI: Parso");
             } catch (ParseException e) {
                 e.printStackTrace();
             }
             if(y.compareTo(date)>=0){
-                Log.e("App", "loadUI: ho comparato");
-                listArray.add(TextUtils.join("",unisco1) + "-" + TextUtils.join("",unisco2) + "-" + s[2] + "-" + s[4] + "-" + s[10]);
+                String p = s[10].substring(1,s[10].length()-1);
+                //Log.e("App", "loadUI: ho comparato");
+                Log.e("App", "loadUI: " + " " + p);
+                if(selections.contains(p)) {
+                    listArray.add(TextUtils.join("", unisco1) + "-" + TextUtils.join("", unisco2) + "-" + s[2] + "-" + s[4] + "-" + s[10]);
+                }
             }
         }
-        listArray.add("Nelle vicinanze:");
+        listArray.add("Nelle vicinanze (Venezia):");
+        for(String[] s:listOfLists){
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            String[] lettere1 = s[0].toString().split("");
+            String[] unisco1 = Arrays.copyOfRange(lettere1,2,lettere1.length-1);
+
+            String[] lettere2 = s[1].toString().split("");
+            String[] unisco2 = Arrays.copyOfRange(lettere2,2,lettere2.length-1);
+            //Log.e("App", "loadUI: Definisco sdf");
+            Date date = new Date();
+            sdf.format(date);
+            //Log.e("App", "loadUI: faccio il format");
+            try {
+                y = sdf.parse(TextUtils.join("",unisco1));
+                //Log.e("App", "loadUI: Parso");
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            if(y.compareTo(date)>=0){
+                String p = s[10].substring(1,s[10].length()-1);
+                //Log.e("App", "loadUI: ho comparato");
+                //Log.e("App", "loadUI: " + " " + p);
+                if(p.compareTo("Venezia")==0) {
+                    listArray.add(TextUtils.join("", unisco1) + "-" + TextUtils.join("", unisco2) + "-" + s[2] + "-" + s[4] + "-" + s[10]);
+                }
+            }
+        }
+
 
         listAdapter.notifyDataSetChanged();
 
@@ -196,7 +243,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        readSelections();
+        loadUI();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -204,6 +256,7 @@ public class MainActivity extends AppCompatActivity {
         // setContentView(R.layout.activity_main);
         permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
         Log.e("App", "onCreate: sono nell'onCreate");
+        readSelections();
         ////////////////////////////////////////////////////////////////////////
         /////////////////////// PERMISSIONS ////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////
@@ -258,6 +311,7 @@ public class MainActivity extends AppCompatActivity {
 
     // This method will return true or false, depending on the status of the
     // GPS location service.
+
 
     private Boolean displayGpsStatus(){
         ContentResolver contentResolver = getBaseContext().getContentResolver();
