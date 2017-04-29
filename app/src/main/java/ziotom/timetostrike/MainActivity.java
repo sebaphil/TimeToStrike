@@ -7,6 +7,7 @@ import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
@@ -30,6 +31,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -63,13 +65,10 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
-    // NOT WORKING HERE
-    //int fineLocationPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
-    //int writeExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-    //int readExternalStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
     ArrayAdapter<String> listAdapter;
     String[] permissions;
     RelativeLayout mainActivityLayout;
@@ -78,9 +77,7 @@ public class MainActivity extends AppCompatActivity {
     DownloadTask downloadTask;
     Date y;
     ArrayList<String[]> listOfLists;
-    //Giorno giorno;
     final Integer favoriteListViewID = 41;
-    final Integer nearbyListViewID = 42;
 
     final String csvFile = "/sdcard/scioperi.csv";
     String line = "";
@@ -90,14 +87,29 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, 0, 0, "Impostazioni");
+        menu.add(0, 0, 0, "Preferiti");
         return super.onCreateOptionsMenu(menu);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case 0:
+                Log.e("App", "onOptionsItemSelected: ho cliccato le impostazioni");
+                Intent myIntent = new Intent(this, SettingsActivity.class);
+                //myIntent.putExtra("key", value); //Optional parameters
+                this.startActivity(myIntent);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+
+
     protected void loadUI(){
         mainActivityLayout = new RelativeLayout(this);
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        //mainActivityLayout.setOrientation(LinearLayout.VERTICAL);
         mainActivityLayout.setId(1);
         Log.e("App", "onCreate: ho definito e istanziato il layout");
 
@@ -109,10 +121,6 @@ public class MainActivity extends AppCompatActivity {
         // so we're going to fix the orientation.
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        /*File prova = new File("/sdcard/scioperi.csv");
-        if(prova.exists()){
-            Log.e("App", "loadUI: file esiste!");
-        }*/
         listArray = new ArrayList<String>();
         Log.e("App", "onCreate: ho definito gli arraylist di supporto");
 
@@ -121,26 +129,10 @@ public class MainActivity extends AppCompatActivity {
         listAdapter = new ArrayAdapter<String>(this, simpleListItemID, listArray);
 
         list.setAdapter(listAdapter);
-        list.setClickable(true);
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                mainActivityLayout.removeAllViews();
-
-            }
-        });
 
 
-
-        /////////////////////// Object adding ////////////////////////
-        //mainActivityLayout.addView(favoriteText);
         mainActivityLayout.addView(list);
-        //mainActivityLayout.addView(nearbyText);
 
-        //////////////////////////////////////////////////////////////
-
-
-        //favoriteAdapter.notifyDataSetChanged();
 
         setContentView(mainActivityLayout);
 
@@ -152,7 +144,6 @@ public class MainActivity extends AppCompatActivity {
 
                 // Use comma as separator.
                 String[] listOfStrings = line.split(cvsSplitBy);
-                //Log.e("App", "readCSV: " + listOfStrings[0]);
                 listOfLists.add(listOfStrings);
 
             }
@@ -187,7 +178,6 @@ public class MainActivity extends AppCompatActivity {
         }
         listArray.add("Nelle vicinanze:");
 
-        //favoriteArray.add(listOfLists.get(1)[0].toString());
         listAdapter.notifyDataSetChanged();
 
 
@@ -287,9 +277,12 @@ public class MainActivity extends AppCompatActivity {
         private Context context;
         private PowerManager.WakeLock mWakeLock;
 
+
         public DownloadTask(Context context) {
             this.context = context;
         }
+
+
 
         @Override
         protected String doInBackground(String... sUrl) {
@@ -349,25 +342,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    public static class DateParser{
-        private String giorno;
-        private Date parsedDate;
-        private SimpleDateFormat sdf;
-        public DateParser(String giorno) {
-            this.giorno = giorno;
-        }
-
-        public Date getParsedDate(){
-            sdf = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
-            try {
-                this.parsedDate = sdf.parse(this.giorno + " 01:00:00");
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-            return this.parsedDate;
-        }
-    }
 
 
 
