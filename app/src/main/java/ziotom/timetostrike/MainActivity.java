@@ -104,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, 0, 0, "Preferiti");
+        menu.add(0, 1, 0, "Crediti");
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -116,6 +117,10 @@ public class MainActivity extends AppCompatActivity {
                 Intent myIntent = new Intent(this, SettingsActivity.class);
                 //myIntent.putExtra("key", value); //Optional parameters
                 this.startActivity(myIntent);
+                return true;
+            case 1:
+                Intent intent = new Intent(this, CreditsActivity.class);
+                this.startActivity(intent);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
