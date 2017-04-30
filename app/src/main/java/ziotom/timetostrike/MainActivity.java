@@ -81,7 +81,9 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String[]> listOfLists;
     ArrayList<String> selections;
     Scanner s;
+    Boolean primoAvvio = true;
     final Integer favoriteListViewID = 41;
+    final String TAG = "App";
 
     final String csvFile = "/sdcard/scioperi.csv";
     String line = "";
@@ -91,14 +93,18 @@ public class MainActivity extends AppCompatActivity {
     protected void readSelections() {
         selections = new ArrayList<>();
         try {
+            Log.e(TAG, "readSelections: " + "sto leggendo le selezionate.txt" );
             s = new Scanner(new File("/sdcard/selezionate.txt"));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        while (s.hasNext()) {
-            selections.add(s.next());
+        if(s != null) {
+            Log.e(TAG, "readSelections: " + "selezionate.txt esiste" );
+            while (s.hasNext()) {
+                selections.add(s.next());
+            }
+            s.close();
         }
-        s.close();
     }
 
     @Override
@@ -156,21 +162,24 @@ public class MainActivity extends AppCompatActivity {
 
 
         setContentView(mainActivityLayout);
-
-
+        Log.e(TAG, "loadUI: " + "provo a fare il readSelections()");
+        readSelections();
+        Log.e(TAG, "loadUI: " + "Fatto!");
         listOfLists = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+        if(new File(csvFile).exists()) {
+            Log.e(TAG, "loadUI: " + "il file .csv esiste!");
+            try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+                Log.e(TAG, "loadUI: "+"riesco a leggere");
+                while ((line = br.readLine()) != null) {
+                    // Use comma as separator.
+                    String[] listOfStrings = line.split(cvsSplitBy);
+                    listOfLists.add(listOfStrings);
 
-            while ((line = br.readLine()) != null) {
+                }
 
-                // Use comma as separator.
-                String[] listOfStrings = line.split(cvsSplitBy);
-                listOfLists.add(listOfStrings);
-
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         listOfLists.remove(0);
         Log.e("App", "loadUI: Comincio il ciclo");
@@ -251,8 +260,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        readSelections();
-        loadUI();
+        Log.e(TAG, "onResume: " + primoAvvio.toString());
+        if(!primoAvvio) loadUI();
     }
 
     @Override
@@ -261,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
         // setContentView(R.layout.activity_main);
         permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
         Log.e("App", "onCreate: sono nell'onCreate");
-        readSelections();
+
         ////////////////////////////////////////////////////////////////////////
         /////////////////////// PERMISSIONS ////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////
@@ -277,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, permissions, 0);
             Log.e("App", "onCreate: ho controllato le autorizzazioni perché non c'erano");
         } else {
+            primoAvvio = false;
             try {
                 String result = new DownloadTask(this).execute("http://dati.mit.gov.it/catalog/dataset/2f3ef05b-27b9-459b-8380-d2ffa0fe3f98/resource/6838feb1-1f3d-40dc-845f-d304088a92cd/download/scioperi.csv").get();
             } catch (InterruptedException e) {
@@ -284,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
-            loadUI();
+            //loadUI();
             Log.e("App", "onCreate: autorizzazioni granted, ho eseguito il download e caricato la UI");
         }
 
@@ -305,6 +315,7 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     loadUI();
+                    primoAvvio = false;
                 } else {
                     Log.e("App", "onRequestPermissionsResult: le autorizzazioni sono denied");
                     System.exit(0);

@@ -49,10 +49,13 @@ public class SettingsActivity extends AppCompatActivity {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        while (s.hasNext()){
-            selections.add(s.next());
+        if(s != null) {
+            while (s.hasNext()) {
+                selections.add(s.next());
+            }
+            s.close();
         }
-        s.close();
+
         loadView();
     }
 
